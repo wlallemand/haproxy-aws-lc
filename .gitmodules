@@ -1,0 +1,6 @@
+[submodule "aws-lc"]
+	path = aws-lc
+	url = git@github.com:wlallemand/awslc-build.git
+[submodule "haproxy"]
+	path = haproxy
+	url = git@github.com:wlallemand/haproxy-nightly-build.git
