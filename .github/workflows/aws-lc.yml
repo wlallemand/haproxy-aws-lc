@@ -1,0 +1,58 @@
+name: aws-lc
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install system requirements
+        run: |
+          sudo apt-get update -y
+          sudo apt-get -y -qq install --no-install-recommends build-essential git ca-certificates
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate cache key
+        id: generate-cache-key
+        run: |
+          echo "key=$(find aws-lc -type f -print0 | xargs -0 cat | sha256sum | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: 'Cache Package build'
+        id: cache_ssl
+        uses: actions/cache@v4
+        with:
+          path: '/opt/packages/'
+          key: ssl-${{ steps.generate-cache-key.outputs.key }}
+
+      - name: 'Build packages awslc'
+        if: ${{ steps.cache_ssl.outputs.cache-hit != 'true' }}
+        run: |
+          ./build.sh aws-lc
+
+      - name: 'Install packages'
+        run: |
+          sudo dpkg -i /opt/packages/*.deb
+          dpkg -L libssl-awslc
+          dpkg -L libssl-awslc-dev
+
+      - name: 'Build packages haproxy'
+        run: |
+          ./build.sh haproxy
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: /opt/packages/*.deb
+
+
+
